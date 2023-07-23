@@ -1,0 +1,2 @@
+# 4bpp tiles, with palette, lz77
+-gB4 -pn16 -Mw 4 -Mh 4 -gzl
