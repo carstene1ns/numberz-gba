@@ -22,6 +22,11 @@ The number of steps is written on the tile. When all tiles have moved, the level
 | <kbd>B</kbd>     | Deselects tile or undoes the last move |
 | <kbd>Start</kbd> | Enters the menu(s)                     |
 
+## Run in Browser
+
+Click [here](https://gba.ninja/?autorun=https://carstene1ns.github.io/numberz-gba/numberz.gba) to play!
+Press <kbd>ESC</kbd> for configuration etc.
+
 ## Compilation
 
 Install devkitARM, libtonc and maxmod.
