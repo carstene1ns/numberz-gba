@@ -92,6 +92,7 @@ void play_sfx(enum Sound snd) {
     switch (snd) {
         case SOUND_ANIMATE:
             sh = mmEffect(SFX_ANIMATE);
+            break;
         case SOUND_SELECT:
             sh = mmEffect(SFX_SELECT);
             break;

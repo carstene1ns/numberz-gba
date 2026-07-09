@@ -12,8 +12,11 @@
 #include "menu.h"
 
 // from grit
-#include "bg-game.h"
-#include "ts-game.h"
+#include "bg-game_gfx.h"
+#include "bg-game_map.h"
+#include "bg-game_pal.h"
+#include "ts-game_gfx.h"
+#include "ts-game_pal.h"
 
 static OBJ_ATTR obj_buffer[128];
 
@@ -73,12 +76,16 @@ static bool need_refresh = true;
 #define BLOCK_BORDER 2
 #define BLOCK_OFFSET (BLOCK_SIZE+BLOCK_BORDER)
 
-#define TILE_CURSOR 0
-#define TILE_ANIMATE1 2
-#define TILE_ANIMATE2 1
-#define TILE_SPECIALEND 3
-#define OBJECTS_UI TILE_SPECIALEND
-#define OBJECTS_GAME NUM_BLOCKS * 2 + TILE_SPECIALEND // block, number, special
+#define OBJ_CURSOR 0
+#define OBJ_ANIMATE1 2
+#define OBJ_ANIMATE2 1
+#define OBJ_SPECIALEND 3
+#define OBJECTS_UI OBJ_SPECIALEND
+#define OBJECTS_GAME NUM_BLOCKS * 2 + OBJ_SPECIALEND // block, number, special
+
+#define TILE_CURSOR 16
+#define TILE_BLOCK 0
+#define TILE_ZERO (64 + 16)
 
 #define ID_EMPTY 0
 #define ID_SPECIAL 10
@@ -163,19 +170,19 @@ static void load_level() {
     for(int i = 0; i < LEVEL_ROWS; i++) {
         for(int j = 0; j < LEVEL_COLS; j++) {
             // block
-            OBJ_ATTR *blk = &obj_buffer[TILE_SPECIALEND+i*6+j];
+            OBJ_ATTR *blk = &obj_buffer[OBJ_SPECIALEND+i*6+j];
             obj_set_attr(blk,
                 ATTR0_REG|ATTR0_4BPP|ATTR0_SQUARE,
                 ATTR1_SIZE_32,
-                ATTR2_PRIO(2) | ATTR2_PALBANK(current_level[i][j]) | 0); // colored bank 0-5, tile 0 is the block
+                ATTR2_PRIO(2) | ATTR2_PALBANK(current_level[i][j]) | TILE_BLOCK); // colored bank 0-5
             obj_set_pos(blk, DRAW_OFFSET + j * BLOCK_OFFSET, DRAW_OFFSET + i * BLOCK_OFFSET);
 
             // number on top
-            OBJ_ATTR *num = &obj_buffer[TILE_SPECIALEND+NUM_BLOCKS+i*6+j];
+            OBJ_ATTR *num = &obj_buffer[OBJ_SPECIALEND+NUM_BLOCKS+i*6+j];
             obj_set_attr(num,
                 ATTR0_REG|ATTR0_4BPP|ATTR0_SQUARE,
                 ATTR1_SIZE_8,
-                ATTR2_PRIO(1) | ATTR2_PALBANK(6) | (current_level[i][j] + 64 + 16)); // bank 6 is white, get tile with number
+                ATTR2_PRIO(1) | ATTR2_PALBANK(6) | (TILE_ZERO + current_level[i][j])); // bank 6 is white, get tile with number
             int offset = DRAW_OFFSET + BLOCK_SIZE/3;
             obj_set_pos(num, offset + j * BLOCK_OFFSET, offset + i * BLOCK_OFFSET);
 
@@ -191,12 +198,12 @@ static void load_level() {
 }
 
 static inline OBJ_ATTR* get_sprite_from_block(int x, int y, bool num) {
-    return &obj_buffer[TILE_SPECIALEND + (num ? NUM_BLOCKS : 0) + y * 6 + x];
+    return &obj_buffer[OBJ_SPECIALEND + (num ? NUM_BLOCKS : 0) + y * 6 + x];
 }
 
 void set_animation_block(bool show, bool set_palbank, int palbank, bool set_number, int number) {
-    OBJ_ATTR *anim = &obj_buffer[TILE_ANIMATE1];
-    OBJ_ATTR *anim_num = &obj_buffer[TILE_ANIMATE2];
+    OBJ_ATTR *anim = &obj_buffer[OBJ_ANIMATE1];
+    OBJ_ATTR *anim_num = &obj_buffer[OBJ_ANIMATE2];
 
     if(set_palbank) {
         BFN_SET(anim->attr2, palbank, ATTR2_PALBANK);
@@ -216,8 +223,8 @@ void set_animation_block(bool show, bool set_palbank, int palbank, bool set_numb
 }
 
 void move_animation_block(int x, int y) {
-    OBJ_ATTR *anim = &obj_buffer[TILE_ANIMATE1];
-    OBJ_ATTR *anim_num = &obj_buffer[TILE_ANIMATE2];
+    OBJ_ATTR *anim = &obj_buffer[OBJ_ANIMATE1];
+    OBJ_ATTR *anim_num = &obj_buffer[OBJ_ANIMATE2];
 
     obj_set_pos(anim, DRAW_OFFSET + x, DRAW_OFFSET + y);
     int offset = DRAW_OFFSET + BLOCK_SIZE/3;
@@ -260,7 +267,7 @@ static void animate_cursor() {
             curs_bank = 0;
         else
             curs_bank = 6;
-        BFN_SET((&obj_buffer[TILE_CURSOR])->attr2, curs_bank, ATTR2_PALBANK);
+        BFN_SET((&obj_buffer[OBJ_CURSOR])->attr2, curs_bank, ATTR2_PALBANK);
         curs_tick = 0;
     }
 }
@@ -274,12 +281,12 @@ static void move_cursor() {
     game_vars.cursor.x = clamp(game_vars.cursor.x, 0, 6);
     game_vars.cursor.y = clamp(game_vars.cursor.y, 0, 6);
 
-    obj_set_pos(&obj_buffer[TILE_CURSOR], game_vars.cursor.x * BLOCK_OFFSET + BLOCK_BORDER,
+    obj_set_pos(&obj_buffer[OBJ_CURSOR], game_vars.cursor.x * BLOCK_OFFSET + BLOCK_BORDER,
                 game_vars.cursor.y * BLOCK_OFFSET + BLOCK_BORDER);
 }
 
 static void hide_cursor(bool hide) {
-    OBJ_ATTR *cur= &obj_buffer[TILE_CURSOR];
+    OBJ_ATTR *cur= &obj_buffer[OBJ_CURSOR];
     if(hide)
         obj_hide(cur);
     else
@@ -576,12 +583,12 @@ void draw_stats() {
     tte_write(buf);
     tte_set_pos(TEXT_LEFT, 56);
     tte_write("Moves:");
-    posprintf(buf, "#{cx:0x2000}%2d/%2d#{cx:0}", game_vars.move, game_vars.max_moves);
+    posprintf(buf, "#{cx:0x1000}%2d/%2d#{cx:0}", game_vars.move, game_vars.max_moves);
     tte_set_pos(TEXT_LEFT+10, 68);
     tte_write(buf);
     tte_set_pos(TEXT_LEFT-4, 96);
     tte_write("Points:");
-    posprintf(buf, "#{cx:0x2000}%6d#{cx:0}", game_vars.points);
+    posprintf(buf, "#{cx:0x1000}%6d#{cx:0}", game_vars.points);
     tte_set_pos(TEXT_LEFT-2, 108);
     tte_write(buf);
 #if 0
@@ -624,11 +631,11 @@ void init_game(enum GameMode mode, int start_level) {
 
     // Background
     // Load palette
-    GRIT_CPY(pal_bg_mem, bg_gamePal);
+    memcpy16(pal_bg_mem, bg_game_pal, bg_game_pal_size/2);
     // Load tiles into CBB 1
-    LZ77UnCompVram(bg_gameTiles, tile_mem[1]);
+    LZ77UnCompVram(bg_game_gfx, tile_mem[1]);
     // Load map into SBB 16
-    LZ77UnCompVram(bg_gameMap, se_mem[16]);
+    LZ77UnCompVram(bg_game_map, se_mem[16]);
     // set up BG2 for a 4bpp 32x32t map, using charblock 1 and screenblock 16
     REG_BG2CNT = BG_CBB(1) | BG_SBB(16) | BG_4BPP | BG_REG_32x32 | BG_PRIO(3);
     REG_BG2HOFS = 0;
@@ -636,10 +643,10 @@ void init_game(enum GameMode mode, int start_level) {
 
     // Objects
     // Load palette
-    GRIT_CPY(pal_obj_mem, ts_gamePal);
+    memcpy16(pal_obj_mem, ts_game_pal, ts_game_pal_size/2);
     make_palette();
     // Load tiles into CBB 0
-    LZ77UnCompVram(ts_gameTiles, tile_mem[4]);
+    LZ77UnCompVram(ts_game_gfx, tile_mem[4]);
 
     // init sprites
     oam_init(obj_buffer, 128);
@@ -647,25 +654,25 @@ void init_game(enum GameMode mode, int start_level) {
     setup_blending();
 
     // cursor
-    OBJ_ATTR *cur = &obj_buffer[TILE_CURSOR];
+    OBJ_ATTR *cur = &obj_buffer[OBJ_CURSOR];
     obj_set_attr(cur,
         ATTR0_REG|ATTR0_4BPP|ATTR0_SQUARE,
         ATTR1_SIZE_32,
-        ATTR2_PRIO(0) | ATTR2_PALBANK(0) | 16); // bank 0 is normal, get tile with number
+        ATTR2_PRIO(0) | ATTR2_PALBANK(0) | TILE_CURSOR); // bank 0 is normal
     obj_set_pos(cur, 1, 1);
 
     // special animation tiles
-    OBJ_ATTR *anim = &obj_buffer[TILE_ANIMATE1];
+    OBJ_ATTR *anim = &obj_buffer[OBJ_ANIMATE1];
     obj_set_attr(anim,
         ATTR0_REG|ATTR0_4BPP|ATTR0_SQUARE|ATTR0_BLEND,
         ATTR1_SIZE_32,
-        ATTR2_PRIO(0) | ATTR2_PALBANK(0) | 0); // bank 0 is normal, tile 0 is the block
+        ATTR2_PRIO(0) | ATTR2_PALBANK(0) | TILE_BLOCK); // bank 0 is normal
     obj_hide(anim);
-    OBJ_ATTR *anim_num = &obj_buffer[TILE_ANIMATE2];
+    OBJ_ATTR *anim_num = &obj_buffer[OBJ_ANIMATE2];
     obj_set_attr(anim_num,
         ATTR0_REG|ATTR0_4BPP|ATTR0_SQUARE|ATTR0_BLEND,
         ATTR1_SIZE_8,
-        ATTR2_PRIO(0) | ATTR2_PALBANK(6) | (0 + 64 + 16)); // bank 6 is white, tile is "0"
+        ATTR2_PRIO(0) | ATTR2_PALBANK(6) | TILE_ZERO); // bank 6 is white, tile is "0"
     obj_hide(anim_num);
 
     game_vars.points = 0;

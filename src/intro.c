@@ -7,7 +7,9 @@
 #include "game.h"
 #include "audio.h"
 
-#include "bg-intro.h"
+#include "bg-intro_gfx.h"
+#include "bg-intro_map.h"
+#include "bg-intro_pal.h"
 
 static int x, y;
 static int bg_tick, bg_dir;
@@ -69,11 +71,11 @@ void init_intro() {
 
     // Background
     // Load palette
-    GRIT_CPY(pal_bg_mem, bg_introPal);
+    memcpy16(pal_bg_mem, bg_intro_pal, bg_intro_pal_size/2);
     // Load tiles into CBB 1
-    LZ77UnCompVram(bg_introTiles, tile_mem[1]);
+    LZ77UnCompVram(bg_intro_gfx, tile_mem[1]);
     // Load map into SBB 16
-    LZ77UnCompVram(bg_introMap, se_mem[16]);
+    LZ77UnCompVram(bg_intro_map, se_mem[16]);
     // set up BG2 for a 4bpp 32x32t map, using charblock 1 and screenblock 16
     REG_BG2CNT = BG_CBB(1) | BG_SBB(16) | BG_4BPP | BG_REG_32x32 | BG_PRIO(3);
 

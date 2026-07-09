@@ -8,7 +8,7 @@
 // GLOBALS
 static int current_index = 0;
 static int num_options = 0;
-const static MenuOption *current_options;
+static const MenuOption *current_options;
 static void (*additional_drawing)() = NULL;
 static void (*additional_logic)() = NULL;
 
@@ -44,31 +44,31 @@ static void draw_audio_options();
 static void toggle_music();
 static void toggle_sounds();
 
-const static MenuOption options_intro[] = {
+static const MenuOption options_intro[] = {
     { 80, 60, "Start", menu_intro_start },
     { 80, 80, "Options", menu_intro_options },
     { 80, 100, "Credits", init_credits },
     { 80, 120, "back to Title", back_to_intro },
 };
-const static MenuOption options_intro_start[] = {
+static const MenuOption options_intro_start[] = {
     { 80, 60, "Begin", start_game },
     { 80, 80, "Password", NULL },
     { 80, 100, "back", menu_intro_main },
 };
-const static MenuOption options_intro_options[] = {
+static const MenuOption options_intro_options[] = {
     { 80, 60, "Mode", NULL },
     { 80, 80, "Music", toggle_music },
     { 80, 100, "Sounds", toggle_sounds },
     { 80, 120, "back", menu_intro_main },
 };
 
-const static MenuOption options_pause[] = {
+static const MenuOption options_pause[] = {
     { 40, 60, "Continue", back_to_game },
     { 40, 72, "Options", menu_pause_options },
     { 40, 86, "Restart", restart_and_back_to_game },
     { 40, 100, "back to Title", init_intro },
 };
-const static MenuOption options_pause_options[] = {
+static const MenuOption options_pause_options[] = {
     { 40, 60, "Mode", NULL },
     { 40, 80, "Music", toggle_music },
     { 40, 100, "Sounds", toggle_sounds },
